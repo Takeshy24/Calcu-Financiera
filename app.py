@@ -1,19 +1,23 @@
+import os
 import streamlit as st
 from modules.cartera import mostrar_modulo_cartera
 from modules.jubilacion import mostrar_modulo_jubilacion
 from modules.bonos import mostrar_modulo_bonos
 from utils.exportar import generar_pdf_reporte
 
-import kaleido
-
-# Intenta preparar el Chrome/Chromium portable de Kaleido
-try:
-    kaleido.get_chrome_sync()  # descarga el binario si no existe
-    print("✅ Chromium descargado correctamente")
-except Exception as e:
-    print("⚠️ No se pudo descargar Chromium:", e)
-
-
+# Configurar Chromium para Kaleido en Streamlit Cloud
+if 'STREAMLIT_RUNTIME_ENVIRONMENT' in os.environ or 'STREAMLIT_SHARING' in os.environ:
+    # Estamos en Streamlit Cloud
+    os.environ['PLOTLY_KALEIDO_BINARY'] = '/usr/bin/chromium'
+    print("✅ Configurado para usar Chromium de Streamlit Cloud")
+else:
+    # Estamos en local, usar Kaleido normal
+    try:
+        import kaleido
+        kaleido.get_chrome_sync()
+        print("✅ Chromium de Kaleido descargado correctamente")
+    except Exception as e:
+        print("⚠️ No se pudo descargar Chromium:", e)
 
 st.set_page_config(
     page_title="Calculadora Financiera",
@@ -203,14 +207,14 @@ elif pagina == "📄 Exportar":
                         'anos': st.session_state['cartera_params']['anos'],
                         'saldo_final': st.session_state['cartera_saldo_final']
                     }
-                if 'cartera_grafico' in st.session_state:
+                    if 'cartera_grafico' in st.session_state:
                         datos_cartera['grafico'] = st.session_state['cartera_grafico']
                 
                 if 'jubilacion_data' in st.session_state:
                     datos_jubilacion = st.session_state['jubilacion_data']
-                if 'jubilacion_grafico' in st.session_state:
-                     if datos_jubilacion is not None:
-                        datos_jubilacion['grafico'] = st.session_state['jubilacion_grafico']
+                    if 'jubilacion_grafico' in st.session_state:
+                        if datos_jubilacion is not None:
+                            datos_jubilacion['grafico'] = st.session_state['jubilacion_grafico']
                 
                 if 'bono_vp' in st.session_state:
                     datos_bono = {
@@ -219,20 +223,24 @@ elif pagina == "📄 Exportar":
                         'anos': st.session_state['bono_params']['anos'],
                         'vp_total': st.session_state['bono_vp']
                     }
-                if 'bono_grafico' in st.session_state:
-                    datos_bono['grafico'] = st.session_state['bono_grafico']
+                    if 'bono_grafico' in st.session_state:
+                        datos_bono['grafico'] = st.session_state['bono_grafico']
                         
-                pdf_buffer = generar_pdf_reporte(datos_cartera, datos_jubilacion, datos_bono)
-                
-                st.download_button(
-                    label="📄 Descargar Reporte PDF",
-                    data=pdf_buffer,
-                    file_name="reporte_financiero.pdf",
-                    mime="application/pdf",
-                    use_container_width=True
-                )
-                
-                st.success("✅ Reporte generado exitosamente")
+                try:
+                    pdf_buffer = generar_pdf_reporte(datos_cartera, datos_jubilacion, datos_bono)
+                    
+                    st.download_button(
+                        label="📄 Descargar Reporte PDF",
+                        data=pdf_buffer,
+                        file_name="reporte_financiero.pdf",
+                        mime="application/pdf",
+                        use_container_width=True
+                    )
+                    
+                    st.success("✅ Reporte generado exitosamente")
+                except Exception as e:
+                    st.error(f"❌ Error al generar el reporte: {str(e)}")
+                    st.info("💡 Verifica que todos los módulos tengan datos completos")
     else:
         st.error("❌ No hay datos para exportar. Por favor, completa al menos un módulo.")
         st.info("💡 Ve a los módulos de Cartera, Jubilación o Bonos para generar datos")
