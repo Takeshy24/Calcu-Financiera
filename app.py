@@ -1,27 +1,18 @@
-import os
-import subprocess
-
 import streamlit as st
 from modules.cartera import mostrar_modulo_cartera
 from modules.jubilacion import mostrar_modulo_jubilacion
 from modules.bonos import mostrar_modulo_bonos
 from utils.exportar import generar_pdf_reporte
 
-def install_chrome():
-    try:
-        subprocess.run(["google-chrome", "--version"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        print("✅ Chrome ya está instalado")
-    except:
-        print("⬇️ Instalando Google Chrome...")
-        subprocess.run([
-            "apt-get", "update"
-        ], check=True)
-        subprocess.run([
-            "apt-get", "install", "-y", "google-chrome-stable"
-        ], check=True)
-        print("✅ Chrome instalado correctamente")
+import kaleido
 
-install_chrome()
+# Intenta preparar el Chrome/Chromium portable de Kaleido
+try:
+    kaleido.get_chrome_sync()  # descarga el binario si no existe
+    print("✅ Chromium descargado correctamente")
+except Exception as e:
+    print("⚠️ No se pudo descargar Chromium:", e)
+
 
 
 st.set_page_config(
